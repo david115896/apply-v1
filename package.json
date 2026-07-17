@@ -1,0 +1,23 @@
+{
+  "name": "applyforme-apply",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tier-1 auto-apply pipeline (Playwright + BullMQ + Supabase)",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "worker": "node dist/worker.js",
+    "worker:dev": "tsx src/worker.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "bullmq": "^5.12.0",
+    "ioredis": "^5.4.1",
+    "playwright": "^1.46.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}
