@@ -3,7 +3,7 @@
 // contexts per worker process; scale horizontally by running more workers.
 
 import { Queue, Worker, type Job } from "bullmq";
-import IORedis from "ioredis";
+import { Redis as IORedis } from "ioredis";
 import type { JobRef } from "./types.js";
 import { buildCanonicalProfile } from "./canonical.js";
 import { runApplication } from "./runner.js";

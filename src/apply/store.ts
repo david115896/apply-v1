@@ -135,7 +135,7 @@ export class SupabaseProfileSource implements ProfileDataSource {
       )
       .eq("id", userId)
       .single();
-    return (data as UserRow) ?? null;
+    return (data as unknown as UserRow) ?? null;
   }
 
   async getActiveResume(userId: string): Promise<ResumeRow | null> {
