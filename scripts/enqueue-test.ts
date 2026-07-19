@@ -2,7 +2,7 @@
 // through the Railway worker's logs before touching any webapp code.
 //
 // What this does, step by step:
-//   1. Inserts a throwaway `jobs` row pointing at the Greenhouse URL you give it.
+//   1. Inserts a throwaway `jobs` row pointing at the apply_url you give it.
 //      (The worker never re-reads the jobs table — JobRef is passed straight
 //      through in the queue payload — but `applications.job_id` is a NOT NULL
 //      foreign key, so a real row has to exist to satisfy that constraint.)
@@ -23,7 +23,16 @@
 // the exact DELETE statements to remove them once you've inspected the run.
 //
 // Usage:
-//   npx tsx scripts/enqueue-test.ts https://boards.greenhouse.io/yourcompany/jobs/1234567
+//   npx tsx scripts/enqueue-test.ts <any apply_url>
+//
+// The URL doesn't have to be Greenhouse -- it's checked against the same
+// detectFromUrl() the real worker uses (src/apply/detect.ts) and you're told
+// up front which ATS it resolves to and whether an adapter exists for it yet
+// (see src/apply/adapters/registry.ts). Only "greenhouse" has one today --
+// anything else (e.g. a myworkdayjobs.com posting) will correctly land in
+// needs_human with blocker "no-adapter-for-ats". That's still a real,
+// useful result: it proves navigate -> detect -> escalate -> persist all work
+// end to end, ahead of actually building that ATS's adapter.
 //
 // Requires a local .env with REDIS_URL (the PUBLIC Railway proxy endpoint --
 // redis.railway.internal only resolves inside Railway, not from your laptop),
@@ -33,6 +42,8 @@
 import "dotenv/config";
 import { createServiceClient } from "../src/apply/store.js";
 import { makeApplyQueue, enqueueApply, type ApplyJobData } from "../src/apply/queue.js";
+import { detectFromUrl } from "../src/apply/detect.js";
+import { getAdapter } from "../src/apply/adapters/registry.js";
 
 function req(name: string): string {
   const v = process.env[name];
@@ -46,12 +57,18 @@ function req(name: string): string {
 async function main() {
   const applyUrl = process.argv[2];
   if (!applyUrl) {
-    console.error("Usage: npx tsx scripts/enqueue-test.ts <greenhouse-apply-url>");
+    console.error("Usage: npx tsx scripts/enqueue-test.ts <apply-url>");
     process.exit(1);
   }
-  if (!/greenhouse\.io/i.test(applyUrl)) {
-    console.error("This is a Greenhouse-only test target for now -- URL doesn't look like Greenhouse.");
-    process.exit(1);
+
+  const ats = detectFromUrl(applyUrl);
+  const hasAdapter = !!getAdapter(ats);
+  console.log(`URL resolves to ats=${ats} (adapter ${hasAdapter ? "exists" : "NOT built yet"})`);
+  if (!hasAdapter) {
+    console.log(
+      `  -> expect this run to finish as needs_human / "no-adapter-for-ats" -- ` +
+        `that's the correct, expected outcome until src/apply/adapters/${ats}.ts exists.`,
+    );
   }
 
   const userId = req("TEST_USER_ID");
