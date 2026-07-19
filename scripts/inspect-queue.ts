@@ -18,7 +18,9 @@ console.log("Job counts on queue 'apply':", counts);
 
 const waiting = await queue.getJobs(["waiting", "active", "failed", "delayed"], 0, 20);
 for (const job of waiting) {
-  console.log(`- id=${job.id} state=${await job.getState()} data=${JSON.stringify(job.data)}`);
+  console.log(`- id=${job.id} state=${await job.getState()} attemptsMade=${job.attemptsMade}`);
+  if (job.failedReason) console.log(`  failedReason: ${job.failedReason}`);
+  if (job.stacktrace?.length) console.log(`  stacktrace:\n${job.stacktrace.join("\n")}`);
 }
 
 await queue.close();
